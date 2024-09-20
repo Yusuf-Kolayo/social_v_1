@@ -21,11 +21,12 @@
 
   // check if button submits to server
   if (isset($_POST['btn-sign-in'])) {
+
      // get form data
      $email    = $_POST['email'];
      $password = $_POST['password'];
 
-     // connect to db
+     // check if the form data is not empty
      if (strlen($email)>0&&strlen($password)>0) {
         
 
@@ -50,8 +51,10 @@
                 if (password_verify($password, $db_password)) {
                     // set session variables
                     $_SESSION['user_id'] = $row['id'];
-                    $_SESSION['user_name'] = $row['first_name'];
+                    $_SESSION['user_first_name'] = $row['first_name'];
+                    $_SESSION['user_last_name'] = $row['last_name'];  // fetch the last name from the database and store it in the session variable
                     $_SESSION['user_email'] = $row['email'];
+                    $_SESSION['user_picture'] = $row['picture'];
 
                     // redirect to dashboard
                     header("Location: user/dashboard.php");

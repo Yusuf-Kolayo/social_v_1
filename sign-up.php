@@ -20,6 +20,8 @@
 
    // check if the submit button gets to server successfully
    if (isset($_POST['btn_submit'])) {  // if button is submitted
+
+    // get form data
     $first_name = $_POST['first_name'];
     $last_name  = $_POST['last_name'];
     $email  = $_POST['email'];
@@ -37,7 +39,7 @@
       strlen($password)>0&&
       strlen($confirm_password)>0
     ) {
-            // chceck if the passwords maches
+            // check if the passwords maches
             if ($password===$confirm_password) {
 
               $hashed_password = password_hash($confirm_password, PASSWORD_DEFAULT);
@@ -77,6 +79,7 @@
                 $alert_class = 'alert-danger';
                 $msg = 'Email address already exist, pls  log in if you already have an account';
               }
+
           } else {
               $alert_class = 'alert-danger';
               $msg = 'Yours passwords does not match!';
@@ -166,33 +169,32 @@
                                  <div class="col-md-6">
                                     <div class="form-group mb-1">
                                         <label class="form-label mb-1" for="">First Name</label>
-                                        <input type="text" class="form-control form-control-sm mb-0" name="first_name">
+                                        <input type="text" class="form-control form-control-sm mb-0" name="first_name" required>
                                     </div>
                                  </div>
                                  <div class="col-md-6">
                                     <div class="form-group mb-1">
                                         <label class="form-label mb-1" for="">Last Name</label>
-                                        <input type="text" class="form-control form-control-sm mb-0" name="last_name">
+                                        <input type="text" class="form-control form-control-sm mb-0" name="last_name" required>
                                     </div>
                                  </div>
                             </div>
                             
-                            
                             <div class="form-group mb-1">
                                 <label class="form-label mb-1" for="">Email address</label>
-                                <input type="email" class="form-control form-control-sm mb-0" name="email">
+                                <input type="email" class="form-control form-control-sm mb-0" name="email" required>
                             </div>
                             <div class="row">
                                  <div class="col-md-6">
                                     <div class="form-group mb-1">
                                         <label class="form-label mb-1">Password</label>
-                                        <input type="password" class="form-control form-control-sm mb-0" name="password">
+                                        <input type="password" class="form-control form-control-sm mb-0" name="password" required>
                                     </div>
                                  </div>
                                  <div class="col-md-6">
                                     <div class="form-group mb-1">
                                         <label class="form-label mb-1">Confirm Password</label>
-                                        <input type="password" class="form-control form-control-sm mb-0" name="confirm_password">
+                                        <input type="password" class="form-control form-control-sm mb-0" name="confirm_password" required>
                                     </div>
                                  </div>
                             </div>

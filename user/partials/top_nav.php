@@ -274,7 +274,7 @@
                             <a href="#" class="   d-flex align-items-center dropdown-toggle" id="drop-down-arrow" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                 <img src="../assets/images/user/1.jpg" class="img-fluid rounded-circle me-3" alt="user">
                                 <div class="caption">
-                                    <h6 class="mb-0 line-height">Bni Cyst</h6>
+                                    <h6 class="mb-0 line-height"><?=$user_first_name?></h6>
                                 </div>
                             </a>
                             <div class="sub-drop dropdown-menu caption-menu" aria-labelledby="drop-down-arrow">
@@ -286,7 +286,7 @@
                                         </div>
                                     </div>
                                     <div class="card-body p-0 ">
-                                        <a href="../app/profile.html" class="iq-sub-card iq-bg-primary-hover">
+                                        <a href="profile.php" class="iq-sub-card iq-bg-primary-hover">
                                             <div class="d-flex align-items-center">
                                                 <div class="rounded card-icon bg-soft-primary">
                                                     <i class="ri-file-user-line"></i>
@@ -332,8 +332,11 @@
                                             </div>
                                         </a>
                                         <div class="d-inline-block w-100 text-center p-3">
-                                            <a class="btn btn-primary iq-sign-btn" href="../dashboard/sign-in.html" role="button">Sign
-                                                out<i class="ri-login-box-line ms-2"></i></a>
+                                              <form action="" method="post">
+                                                <button class="btn btn-primary iq-sign-btn" role="button" type="submit" name="btn-sign-out">Sign
+                                                    out<i class="ri-login-box-line ms-2"></i>
+                                                </button>
+                                              </form>
                                         </div>
                                     </div>
                                 </div>
