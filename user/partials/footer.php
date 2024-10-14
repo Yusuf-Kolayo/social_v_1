@@ -69,3 +69,59 @@
           </div>
        </div>
     </div>
+
+
+
+
+
+    
+  </body>
+</html>
+
+    <script>
+       
+      
+
+         // handle all like buttons
+         var likeButtons = document.getElementsByClassName('btn-like')
+         // convert to array
+         var likeButtonsArray = Array.from(likeButtons)
+         // loop through each like button
+         likeButtonsArray.forEach(function (likeButton) {
+            // add event listener to each like button
+            likeButton.addEventListener('click', function (e) {
+                 // get the post-id attribute value
+                 var post_id = likeButton.getAttribute('post-id')
+                 console.log('post_id: ' + post_id);
+                 // send a request to the server to update the like count
+                 fetch('ajax_requests/like.php', {
+                    method: 'POST',
+                    headers: {
+                       'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: new URLSearchParams({
+                        post_id: post_id
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                  console.log(data)
+                  //   // update the like count in the UI
+                    var likeCount = document.getElementById('like-count-' + post_id)
+                    likeCount.innerHTML = data.likes+' Likes'
+                    // update the like button text
+                  //   if (data.liked) {
+                  //       likeButton.innerHTML = 'Unlike'
+                  //   } else {
+                  //       likeButton.innerHTML = 'Like'
+                  //   }
+                })
+                .catch(error => {
+                    console.error(error)
+                })
+            })
+         })
+         
+
+      
+    </script>

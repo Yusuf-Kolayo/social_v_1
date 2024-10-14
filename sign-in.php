@@ -50,11 +50,8 @@
 
                 if (password_verify($password, $db_password)) {
                     // set session variables
-                    $_SESSION['user_id'] = $row['id'];
-                    $_SESSION['user_first_name'] = $row['first_name'];
-                    $_SESSION['user_last_name'] = $row['last_name'];  // fetch the last name from the database and store it in the session variable
-                    $_SESSION['user_email'] = $row['email'];
-                    $_SESSION['user_picture'] = $row['picture'];
+                    $_SESSION['logged_in'] = true;
+                    $_SESSION = array_merge($_SESSION, $row);
 
                     // redirect to dashboard
                     header("Location: user/dashboard.php");
@@ -192,7 +189,7 @@
     <!-- app JavaScript -->
     <script src="assets/js/charts/weather-chart.js"></script>
     <script src="assets/js/app.js"></script>
-    <script src="vendor/vanillajs-datepicker/dist/js/datepicker.min.js"></script>
+    <!-- <script src="vendor/vanillajs-datepicker/dist.........../js/datepicker.min.js"></script> -->
     <script src="assets/js/lottie.js"></script>
     
   </body>

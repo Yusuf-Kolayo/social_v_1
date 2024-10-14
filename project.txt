@@ -1,0 +1,12 @@
+- limit the characters of post on the timelines - homepage or profile
+- like post    
+- save post
+- edit post
+- delete post
+
+
+table: likes
+ - id
+ - post_id
+ - user_id
+ - timestamp

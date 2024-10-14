@@ -8,7 +8,7 @@ if (count($_SESSION)==0) {
     header('location:../sign-in.php');
 }
 
-if (!isset($_SESSION['user_id'])) {
+if (!isset($_SESSION['id'])) {
     header('location:../sign-in.php');
 }
 
@@ -41,8 +41,19 @@ if (isset($_POST['btn-sign-out'])) {
    
 
 // fetch current user data
-$user_id = $_SESSION['user_id'];
-$user_first_name = $_SESSION['user_first_name'];
-$user_last_name = $_SESSION['user_last_name'];
-$user_email = $_SESSION['user_email'];
-$user_picture = $_SESSION['user_picture'];
+$user_id = $_SESSION['id'];
+$user_first_name = $_SESSION['first_name'];
+$user_last_name = $_SESSION['last_name'];
+$user_email = $_SESSION['email'];
+$user_picture = $_SESSION['picture'];
+$user_phone = $_SESSION['phone'];
+$user_address = $_SESSION['address'];
+$user_website = $_SESSION['website'];
+$user_social_link = $_SESSION['social_link'];
+$user_birth_date = $_SESSION['birth_date'];
+$user_birth_year = $_SESSION['birth_year'];
+$user_gender = $_SESSION['gender'];
+$user_interest = $_SESSION['interest'];
+$user_language = $_SESSION['language'];
+
+// var_dump($_SESSION);

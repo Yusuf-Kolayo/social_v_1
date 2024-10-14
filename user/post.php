@@ -49,7 +49,6 @@ require ('partials/head.php');
 
 
 
-
       <!-- left side bar -->
       <?php require 'partials/left_side_nav.php'; ?>
       
@@ -76,83 +75,31 @@ require ('partials/head.php');
           <div class="container">
             <div class="row">
                 <div class="col-lg-8 row m-0 p-0 d-block">
-                  <div class="col-sm-12">
-                      <div style="height: 320px;" id="post-modal-data" class="card card-block card-stretch card-height">
-                        <div class="card-header d-flex justify-content-between">
-                            <div class="header-title">
-                              <h4 class="card-title">Create Post</h4>
-                            </div>
-                        </div>
-                        <div class="card-body">
-                          <?php 
-                            // show error messages if there is one
-                            if (strlen($msg)>0) {
-                                echo '<div class="alert p-2 '.$alert_class.' border">'.$msg.'</div>';
-                            }
-                          ?>
-                           <form action="" method="post">
-                                <div class="d-flex align-items-center">
-                                    <div class="user-img">
-                                        <img src="../assets/images/user/1.jpg" alt="userimg" class="avatar-60 rounded-circle">
-                                    </div>
-                                    <div class="post-text ms-3 w-100">
-                                        <textarea name="inp_content" rows="5" class="form-control rounded" placeholder="Write something here..." style="border:none;"></textarea>
-                                    </div>
-                                  </div>
-                                  <hr>
-                                  <ul class=" post-opt-block d-flex list-inline m-0 p-0 flex-wrap">
-                                    <li class="me-3 mb-md-0 mb-2">
-                                        <button type="submit" name="btn_post" class="btn btn-soft-primary">
-                                            Submit
-                                        </button>
-                                    </li>
-                                  </ul>
-                              </div>
-
-                           </form>
-                      </div>
-                  </div>
-
+                 
 
 
                   <div class="col-sm-12">
 
 
                     <?php
-                         // fetch data from posts table
+                         // fetch data from GET URL
+                         $post_id = (int) $_GET['post_id'];
 
                          // create an sql statement
-                         $sql = "SELECT * FROM posts ORDER BY timestamp DESC";
+                         $sql = "SELECT * FROM posts WHERE id = '$post_id' ORDER BY timestamp DESC";
                          // execute the sql statement
                          $result = mysqli_query($connection, $sql);
                          // check if the result is not empty
-                         while($row = mysqli_fetch_assoc($result)) {
+                         $num = mysqli_num_rows($result);
+                         if ($num>0) {
+                         $row = mysqli_fetch_assoc($result);
 
                           $user_id = $row['user_id'];
-                          $post_id = $row['id'];
                           $content = $row['content'];
-                          // shorten the content
-                          if (strlen($content)>300) {
-                            $content = substr($content, 0, 300). ' ..';
-                          } 
-
                           $timestamp = $row['timestamp'];
 
                           // format timestamp
                           $date_time = date('d F Y H:i', $timestamp);
-
-
-
-                          // get the number of likes
-                          $sql_x = "SELECT COUNT(*) as likes FROM likes WHERE post_id =?";
-                          $stmt_x = mysqli_prepare($connection, $sql_x);
-                          mysqli_stmt_bind_param($stmt_x, 's', $post_id);
-                          mysqli_stmt_execute($stmt_x);
-                          $rs_x = mysqli_stmt_get_result($stmt_x);
-                          $n_row_x = mysqli_fetch_assoc($rs_x);
-                          // count the number of likes
-                          $like_count = $n_row_x['likes'];
-                          
 
                             // get user details using user_id
                             $user_sql = "SELECT * FROM users WHERE id=$user_id";
@@ -235,22 +182,22 @@ require ('partials/head.php');
                                               <div class="d-flex align-items-center">
                                                   <div class="like-data">
                                                     <div class="dropdown">
-                                                        <span class="btn-like" post-id="<?=$post_id?>">
-                                                          <img src="../assets/images/icon/01.png" class="img-fluid" alt="">
+                                                        <span>
+                                                        <img src="../assets/images/icon/01.png" class="img-fluid" alt="">
                                                         </span>
                                                     </div>
                                                   </div>
                                                   <div class="total-like-block ms-2 me-3">
                                                     <div class="dropdown">
-                                                        <span id="like-count-<?=$post_id?>">
-                                                        <?=$like_count?> Likes
+                                                        <span>
+                                                          140 Likes
                                                         </span>
                                                     </div>
                                                   </div>
                                               </div>
                                               <div class="total-comment-block">
                                                   <div class="dropdown">
-                                                     <a href="post.php?post_id=<?=$post_id?>"> 20 Comment </a>
+                                                      20 Comment 
                                                   </div>
                                               </div>
                                             </div>
@@ -265,8 +212,8 @@ require ('partials/head.php');
                                 </div>
                             </div>
                    <?php
-                         }
-
+                       
+                        }
                     ?>
 
                  
@@ -274,6 +221,9 @@ require ('partials/head.php');
 
                 </div>
                 </div>
+
+
+
 
 
 

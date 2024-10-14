@@ -1,39 +1,166 @@
 <?php
 
- require 'head.php';
+require ('partials/head.php');
 
 //   var_dump($_SESSION);
+
+if (isset($_POST['btn_update_profile'])) {
+    // get form data
+    $first_name = $_POST['first_name'];
+    $last_name  = $_POST['last_name'];
+    $email  = $_POST['email'];
+    $phone  = $_POST['phone'];
+    $address  = $_POST['address'];
+
+    $website  = $_POST['website'];
+    $social_link  = $_POST['social_link'];
+
+    $birth_date  = $_POST['birth_date'];
+    $birth_year  = $_POST['birth_year'];
+
+    $gender    = $_POST['gender'];
+    $interest  = $_POST['interest'];
+    $language  = $_POST['language'];   
+
+
+    
+    if (
+      strlen($first_name)>0&&
+      strlen($last_name)>0&&
+      strlen($email)>0&&
+      strlen($phone)>0&&
+      strlen($address)>0
+    ) {
+
+       // check for the prescence of email in the DB
+       $sql = "UPDATE users SET first_name=?, last_name=?, email=?, phone=?, address=?, website=?,social_link=?,birth_date=?,birth_year=?,gender=?,interest=?,language=? WHERE id = '$user_id'";
+       // prepare and bind the SQL statement to protect against SQL injections
+       $stmt = mysqli_prepare($connection, $sql);
+       // bind parameters
+       mysqli_stmt_bind_param($stmt, 'ssssssssssss', $first_name, $last_name, $email, $phone, $address, $website, $social_link, $birth_date, $birth_year, $gender, $interest, $language);
+       // execute the statement
+       mysqli_stmt_execute($stmt);
+         // count the number of rows
+       $n_row = mysqli_stmt_affected_rows($stmt);
+
+       if ($n_row) {
+                  // check for the prescence of email in the DB
+            $sql_x = "SELECT * FROM users WHERE id=?";
+            // prepare and bind the SQL statement to protect against SQL injections
+            $stmt_x = mysqli_prepare($connection, $sql_x);
+            // bind parameters
+            mysqli_stmt_bind_param($stmt_x, 's', $user_id);
+            // execute the statement
+            mysqli_stmt_execute($stmt_x);
+            // fetch the result  
+            $rs_x = mysqli_stmt_get_result($stmt_x);
+            // count the number of rows
+            $n_row_x = mysqli_fetch_assoc($rs_x);  
+
+             // set session variables
+               $_SESSION = array_merge($_SESSION, $n_row_x);
+
+
+               // fetch current user data
+               $user_id = $_SESSION['id'];
+               $user_first_name = $_SESSION['first_name'];
+               $user_last_name = $_SESSION['last_name'];
+               $user_email = $_SESSION['email'];
+               $user_picture = $_SESSION['picture'];
+               $user_phone = $_SESSION['phone'];
+               $user_address = $_SESSION['address'];
+               $user_website = $_SESSION['website'];
+               $user_social_link = $_SESSION['social_link'];
+               $user_birth_date = $_SESSION['birth_date'];
+               $user_birth_year = $_SESSION['birth_year'];
+               $user_gender = $_SESSION['gender'];
+               $user_interest = $_SESSION['interest'];
+               $user_language = $_SESSION['language'];
+
+
+         $msg = "Profile updated successfully.";
+         $alert_class = 'alert-success';
+       } else {
+         $msg = "Error updating profile.";
+         $alert_class = 'alert-danger';
+       }
+
+    } else {
+      $msg = "Please fill in all fields.";
+      $alert_class = 'alert-danger';
+    }
+
+    
+}
+
+
+
+
+if (isset($_POST['btn_update_dp'])) {
+
+    // get form data
+    $picture = $_FILES['user_dp']['name'];
+    $picture_tmp_name = $_FILES['user_dp']['tmp_name'];
+    $picture_size = $_FILES['user_dp']['size'];
+    $picture_type = $_FILES['user_dp']['type'];
+
+    // fetch the user id from session
+    $user_id = $_SESSION['id'];
+
+    // fetch old picture
+     $user_sql = "SELECT picture FROM users WHERE id=$user_id";
+     $user_result = mysqli_query($connection, $user_sql);
+     $user_row = mysqli_fetch_assoc($user_result);
+     $user_old_picture = $user_row['picture'];
+
+    // check for allowed picture type
+    $allowed_types = array('image/jpeg', 'image/jpg', 'image/png', 'image/webp');
+    if (!in_array($picture_type, $allowed_types)) {
+      $msg = "Invalid picture format. Only JPEG, JPG, PNG, and WebP are allowed.";
+      $alert_class = 'alert-danger';
+    } else {
+      // check for picture size
+      if ($picture_size > 1048576) {
+        $msg = "Picture size should not exceed 1MB.";
+        $alert_class = 'alert-danger';
+      } else {
+         // modify picture final file name
+         $user_picture = $user_id.'_'.time().'.'.pathinfo($picture, PATHINFO_EXTENSION);
+
+         // upload the picture
+         $upload_result = move_uploaded_file($picture_tmp_name, '../assets/images/users_dp/'.$user_picture);
+
+         if ($upload_result) {
+            // delete the old picture
+            if ($user_old_picture!=null && file_exists('../assets/images/users_dp/'.$user_old_picture)) {
+               unlink('../assets/images/users_dp/'.$user_old_picture);
+            }
+
+             // update the picture in the database
+             $sql_update_dp = "UPDATE users SET picture='$user_picture' WHERE id=$user_id";
+             $update_dp_result = mysqli_query($connection, $sql_update_dp);
+
+             if ($update_dp_result) {
+                $msg = "Profile picture updated successfully.";
+                $alert_class = 'alert-success';
+                $_SESSION['picture'] = $user_picture;
+             } else {
+                $msg = "Error updating profile picture.";
+                $alert_class = 'alert-danger';
+             }
+         }
+      }
+   }
+}
+
+
+if ($user_picture==null) {
+   $user_dp_html = '<img src="../assets/images/avatar_dummy.png" alt="profile-img" class="avatar-130 img-fluid" />';
+} else {
+   $user_dp_html = '<img src="../assets/images/users_dp/'.$user_picture.'" alt="profile-img" class="avatar-130 img-fluid" />';
+}
 ?>
 
-
-
-
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-      <title>User Profile</title>
-      
-      <link rel="shortcut icon" href="../assets/images/favicon.ico" />
-      <link rel="stylesheet" href="../assets/css/libs.min.css">
-      <link rel="stylesheet" href="../assets/css/socialv.css?v=4.0.0">
-      <link rel="stylesheet" href="../assets/vendor/@fortawesome/fontawesome-free/css/all.min.css">
-      <link rel="stylesheet" href="../assets/vendor/remixicon/fonts/remixicon.css">
-      <link rel="stylesheet" href="../assets/vendor/vanillajs-datepicker/dist/css/datepicker.min.css">
-      <link rel="stylesheet" href="../assets/vendor/font-awesome-line-awesome/css/all.min.css">
-      <link rel="stylesheet" href="../assets/vendor/line-awesome/dist/line-awesome/css/line-awesome.min.css">
-      
-  </head>
-  <body class="  ">
-    <!-- loader Start -->
-    <div id="loading">
-          <div id="loading-center">
-          </div>
-    </div>
-    <!-- loader END -->
-    <!-- Wrapper Start -->
-    <div class="wrapper">
 
 
       <!-- left side bar -->
@@ -67,7 +194,29 @@
                            </div>
                            <div class="user-detail text-center mb-3">
                               <div class="profile-img">
-                                 <img src="../assets/images/user/11.png" alt="profile-img" class="avatar-130 img-fluid" />
+                                 <?=$user_dp_html?>
+                                <div class="">
+                                    <button class="btn btn-primary m-1 d-block mx-auto btn-sm" data-bs-toggle="modal" data-bs-target="#dp-update-modal">Update DP</button>
+                                    <div class="modal fade" id="dp-update-modal" tabindex="-1"  aria-labelledby="post-modalLabel" aria-hidden="true" >
+                                    <div class="modal-dialog  modal-xs modal-fullscreen-sm-down">
+                                       <div class="modal-content">
+                                          <div class="modal-header">
+                                             <h5 class="modal-title" id="post-modalLabel">Update Profile</h5>
+                                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class="ri-close-fill"></i></button>
+                                          </div>
+                                          <div class="modal-body">
+                                                <form action="" method="post" enctype="multipart/form-data">
+                                                      <div class="text-center pb-2">
+                                                         <?=$user_dp_html?>
+                                                      </div>
+                                                      <input type="file" class="form-control my-2" name="user_dp">
+                                                      <button type="submit" name="btn_update_dp" class="btn btn-primary d-block w-100 mt-3">Update DP</button>
+                                                </form>
+                                          </div>
+                                       </div>
+                                    </div>
+                                 </div>
+                                </div>
                               </div>
                               <div class="profile-detail">
                                  <h3 class=""><?php echo "$user_first_name $user_last_name"; ?></h3>
@@ -116,6 +265,14 @@
                         </div>
                      </div>
                   </div>
+
+                  <?php 
+                     // show error messages if there is one
+                     if (strlen($msg)>0) {
+                           echo '<div class="alert p-2 '.$alert_class.' border">'.$msg.'</div>';
+                     }
+                  ?>
+
                   <div class="card">
                      <div class="card-body p-0">
                         <div class="user-tabing">
@@ -300,835 +457,114 @@
                                              </li>
                                        </ul>
                                     </div>
-                                    <div class="modal fade" id="post-modal" tabindex="-1"  aria-labelledby="post-modalLabel" aria-hidden="true" >
-                                       <div class="modal-dialog  modal-lg modal-fullscreen-sm-down">
-                                          <div class="modal-content">
-                                             <div class="modal-header">
-                                                <h5 class="modal-title" id="post-modalLabel">Create Post</h5>
-                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class="ri-close-fill"></i></button>
-                                             </div>
-                                             <div class="modal-body">
-                                                <div class="d-flex align-items-center">
-                                                   <div class="user-img">
-                                                      <img src="../assets/images/user/1.jpg" alt="userimg" class="avatar-60 rounded-circle img-fluid">
-                                                   </div>
-                                                   <form class="post-text ms-3 w-100" action="#">
-                                                      <input type="text" class="form-control rounded" placeholder="Write something here..." style="border:none;">
-                                                   </form>
-                                                </div>
-                                                <hr>
-                                                <ul class="d-flex flex-wrap align-items-center list-inline m-0 p-0">
-                                                   <li class="col-md-6 mb-3">
-                                                      <div class="bg-soft-primary rounded p-2 pointer me-3"><a href="#"></a><img src="../assets/images/small/07.png" alt="icon" class="img-fluid"> Photo/Video</div>
-                                                   </li>
-                                                   <li class="col-md-6 mb-3">
-                                                      <div class="bg-soft-primary rounded p-2 pointer me-3"><a href="#"></a><img src="../assets/images/small/08.png" alt="icon" class="img-fluid"> Tag Friend</div>
-                                                   </li>
-                                                   <li class="col-md-6 mb-3">
-                                                      <div class="bg-soft-primary rounded p-2 pointer me-3"><a href="#"></a><img src="../assets/images/small/09.png" alt="icon" class="img-fluid"> Feeling/Activity</div>
-                                                   </li>
-                                                   <li class="col-md-6 mb-3">
-                                                      <div class="bg-soft-primary rounded p-2 pointer me-3"><a href="#"></a><img src="../assets/images/small/10.png" alt="icon" class="img-fluid"> Check in</div>
-                                                   </li>
-                                                   <li class="col-md-6 mb-3">
-                                                      <div class="bg-soft-primary rounded p-2 pointer me-3"><a href="#"></a><img src="../assets/images/small/11.png" alt="icon" class="img-fluid"> Live Video</div>
-                                                   </li>
-                                                   <li class="col-md-6 mb-3">
-                                                      <div class="bg-soft-primary rounded p-2 pointer me-3"><a href="#"></a><img src="../assets/images/small/12.png" alt="icon" class="img-fluid"> Gif</div>
-                                                   </li>
-                                                   <li class="col-md-6 mb-3">
-                                                      <div class="bg-soft-primary rounded p-2 pointer me-3"><a href="#"></a><img src="../assets/images/small/13.png" alt="icon" class="img-fluid"> Watch Party</div>
-                                                   </li>
-                                                   <li class="col-md-6 mb-3">
-                                                      <div class="bg-soft-primary rounded p-2 pointer me-3"><a href="#"></a><img src="../assets/images/small/14.png" alt="icon" class="img-fluid"> Play with Friends</div>
-                                                   </li>
-                                                </ul>
-                                                <hr>
-                                                <div class="other-option">
-                                                   <div class="d-flex align-items-center justify-content-between">
-                                                      <div class="d-flex align-items-center">
-                                                         <div class="user-img me-3">
-                                                            <img src="../assets/images/user/1.jpg" alt="userimg" class="avatar-60 rounded-circle img-fluid">
-                                                         </div>
-                                                         <h6>Your Story</h6>
-                                                      </div>
-                                                      <div class="card-post-toolbar">
-                                                         <div class="dropdown">
-                                                            <span class="dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" role="button">
-                                                            <span class="btn btn-primary">Friend</span>
-                                                            </span>
-                                                            <div class="dropdown-menu m-0 p-0">
-                                                               <a class="dropdown-item p-3" href="#">
-                                                                  <div class="d-flex align-items-top">
-                                                                     <i class="ri-save-line h4"></i>
-                                                                     <div class="data ms-2">
-                                                                        <h6>Public</h6>
-                                                                        <p class="mb-0">Anyone on or off Facebook</p>
-                                                                     </div>
-                                                                  </div>
-                                                               </a>
-                                                               <a class="dropdown-item p-3" href="#">
-                                                                  <div class="d-flex align-items-top">
-                                                                  <i class="ri-close-circle-line h4"></i>
-                                                                     <div class="data ms-2">
-                                                                        <h6>Friends</h6>
-                                                                        <p class="mb-0">Your Friend on facebook</p>
-                                                                     </div>
-                                                                  </div>
-                                                               </a>
-                                                               <a class="dropdown-item p-3" href="#">
-                                                                  <div class="d-flex align-items-top">
-                                                                  <i class="ri-user-unfollow-line h4"></i>
-                                                                     <div class="data ms-2">
-                                                                        <h6>Friends except</h6>
-                                                                        <p class="mb-0">Don't show to some friends</p>
-                                                                     </div>
-                                                                  </div>
-                                                               </a>
-                                                               <a class="dropdown-item p-3" href="#">
-                                                                  <div class="d-flex align-items-top">
-                                                                  <i class="ri-notification-line h4"></i>
-                                                                     <div class="data ms-2">
-                                                                        <h6>Only Me</h6>
-                                                                        <p class="mb-0">Only me</p>
-                                                                     </div>
-                                                                  </div>
-                                                               </a>
-                                                            </div>
-                                                         </div>
-                                                      </div>
-                                                   </div>
-                                                </div>
-                                                <button type="submit" class="btn btn-primary d-block w-100 mt-3">Post</button>
-                                             </div>
-                                          </div>
-                                       </div>
-                                    </div>
                               </div>
-                                 <div class="card">
-                                    <div class="card-body">
-                                       <div class="post-item">
-                                          <div class="user-post-data pb-3">
-                                             <div class="d-flex justify-content-between">
-                                                <div class="me-3">
-                                                   <img class="rounded-circle  avatar-60" src="../assets/images/user/1.jpg" alt="">
-                                                </div>
-                                                <div class="w-100">
-                                                   <div class="d-flex justify-content-between flex-wrap">
-                                                      <div class="">
-                                                         <h5 class="mb-0 d-inline-block"><a href="#" class="">Bni Cyst</a></h5>
-                                                         <p class="ms-1 mb-0 d-inline-block">Add New Post</p>
-                                                         <p class="mb-0">3 hour ago</p>
-                                                      </div>
-                                                      <div class="card-post-toolbar">
-                                                         <div class="dropdown">
-                                                            <span class="dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" role="button">
-                                                            <i class="ri-more-fill"></i>
-                                                            </span>
-                                                            <div class="dropdown-menu m-0 p-0">
-                                                               <a class="dropdown-item p-3" href="#">
-                                                                  <div class="d-flex align-items-top">
-                                                                  <i class="ri-save-line h4"></i>
-                                                                     <div class="data ms-2">
-                                                                        <h6>Save Post</h6>
-                                                                        <p class="mb-0">Add this to your saved items</p>
+                               
+                                             <?php
+
+                                                   
+                                                   // fetch data from posts table
+
+                                                   // create an sql statement
+                                                   $sql = "SELECT * FROM posts WHERE user_id='$user_id' ORDER BY timestamp DESC";
+                                                   // execute the sql statement
+                                                   $result = mysqli_query($connection, $sql);
+                                                   // check if the result is not empty
+                                                   while($row = mysqli_fetch_assoc($result)) {
+
+                                                   $user_id = $row['user_id'];
+                                                   $content = $row['content'];
+                                                      // shorten the content
+                                                   if (strlen($content)>300) {
+                                                      $content = substr($content, 0, 300). ' ..';
+                                                   } 
+                                                   
+                                                   
+                                                   $timestamp = $row['timestamp'];
+
+                                                   // format timestamp
+                                                   $date_time = date('d F Y H:i', $timestamp);
+
+                                                      // get user details using user_id
+                                                      $user_sql = "SELECT * FROM users WHERE id=$user_id";
+                                                      $user_result = mysqli_query($connection, $user_sql);
+                                                      $user_row = mysqli_fetch_assoc($user_result);
+                                                      $first_name = $user_row['first_name'];
+                                                      $last_name  = $user_row['last_name'];
+
+                                                      echo '
+                                                         <div class="card card-block card-stretch card-height">
+                                                            <div class="card-body">
+                                                               <div class="user-post-data">
+                                                                  <div class="d-flex justify-content-between">
+                                                                     <div class="me-3">
+                                                                        <img class="rounded-circle img-fluid" src="../assets/images/user/02.jpg" alt="">
+                                                                     </div>
+                                                                     <div class="w-100">
+                                                                        <div class="d-flex justify-content-between">
+                                                                           <div class="">
+                                                                              <h5 class="mb-0 d-inline-block">'.$first_name.'</h5>
+                                                                              <p class="mb-0 text-primary">'.$date_time.'</p>
+                                                                           </div>
+                                                                           <div class="card-post-toolbar">
+                                                                              <div class="dropdown">
+                                                                                 <span class="dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" role="button">
+                                                                                 <i class="ri-more-fill"></i>
+                                                                                 </span>
+                                                                                 <div class="dropdown-menu m-0 p-0">
+                                                                                    <a class="dropdown-item p-3" href="#">
+                                                                                       <div class="d-flex align-items-top">
+                                                                                          <i class="ri-save-line h4"></i>
+                                                                                          <div class="data ms-2">
+                                                                                             <h6>Save Post</h6>
+                                                                                             <p class="mb-0">Add this to your saved items</p>
+                                                                                          </div>
+                                                                                       </div>
+                                                                                    </a>
+                                                                                    <a class="dropdown-item p-3" href="#">
+                                                                                       <div class="d-flex align-items-top">
+                                                                                          <i class="ri-close-circle-line h4"></i>
+                                                                                          <div class="data ms-2">
+                                                                                             <h6>Hide Post</h6>
+                                                                                             <p class="mb-0">See fewer posts like this.</p>
+                                                                                          </div>
+                                                                                       </div>
+                                                                                    </a>
+                                                                                    <a class="dropdown-item p-3" href="#">
+                                                                                       <div class="d-flex align-items-top">
+                                                                                          <i class="ri-user-unfollow-line h4"></i>
+                                                                                          <div class="data ms-2">
+                                                                                             <h6>Unfollow User</h6>
+                                                                                             <p class="mb-0">Stop seeing posts but stay friends.</p>
+                                                                                          </div>
+                                                                                       </div>
+                                                                                    </a>
+                                                                                    <a class="dropdown-item p-3" href="#">
+                                                                                       <div class="d-flex align-items-top">
+                                                                                          <i class="ri-notification-line h4"></i>
+                                                                                          <div class="data ms-2">
+                                                                                             <h6>Notifications</h6>
+                                                                                             <p class="mb-0">Turn on notifications for this post</p>
+                                                                                          </div>
+                                                                                       </div>
+                                                                                    </a>
+                                                                                 </div>
+                                                                              </div>
+                                                                           </div>
+                                                                        </div>
                                                                      </div>
                                                                   </div>
-                                                               </a>
-                                                               <a class="dropdown-item p-3" href="#">
-                                                                  <div class="d-flex align-items-top">
-                                                                  <i class="ri-pencil-line h4"></i>
-                                                                     <div class="data ms-2">
-                                                                        <h6>Edit Post</h6>
-                                                                        <p class="mb-0">Update your post and saved items</p>
-                                                                     </div>
-                                                                  </div>
-                                                               </a>
-                                                               <a class="dropdown-item p-3" href="#">
-                                                                  <div class="d-flex align-items-top">
-                                                                     <i class="ri-close-circle-line h4"></i>
-                                                                     <div class="data ms-2">
-                                                                        <h6>Hide From Timeline</h6>
-                                                                        <p class="mb-0">See fewer posts like this.</p>
-                                                                     </div>
-                                                                  </div>
-                                                               </a>
-                                                               <a class="dropdown-item p-3" href="#">
-                                                                  <div class="d-flex align-items-top">
-                                                                  <i class="ri-delete-bin-7-line h4"></i>
-                                                                     <div class="data ms-2">
-                                                                        <h6>Delete</h6>
-                                                                        <p class="mb-0">Remove thids Post on Timeline</p>
-                                                                     </div>
-                                                                  </div>
-                                                               </a>
-                                                               <a class="dropdown-item p-3" href="#">
-                                                                  <div class="d-flex align-items-top">
-                                                                  <i class="ri-notification-line h4"></i>
-                                                                     <div class="data ms-2">
-                                                                        <h6>Notifications</h6>
-                                                                        <p class="mb-0">Turn on notifications for this post</p>
-                                                                     </div>
-                                                                  </div>
-                                                               </a>
-                                                            </div>
+                                                               </div>
+                                                               <div class="mt-3">
+                                                                  <p>'.nl2br($content).'</p>
+                                                               </div>
                                                          </div>
                                                       </div>
-                                                   </div>
-                                                </div>
-                                             </div>
-                                          </div>
-                                          <div class="user-post">
-                                             <a href="#"><img src="../assets/images/page-img/p1.jpg" alt="post-image" class="img-fluid w-100" /></a>
-                                          </div>
-                                          <div class="comment-area mt-3">
-                                             <div class="d-flex justify-content-between align-items-center flex-wrap">
-                                                <div class="like-block position-relative d-flex align-items-center">
-                                                   <div class="d-flex align-items-center">
-                                                      <div class="like-data">
-                                                         <div class="dropdown">
-                                                            <span class="dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" role="button">
-                                                            <img src="../assets/images/icon/01.png" class="img-fluid" alt="">
-                                                            </span>
-                                                            <div class="dropdown-menu py-2">
-                                                               <a class="ms-2 me-2" href="#" data-bs-toggle="tooltip" data-bs-placement="top" title="Like"><img src="../assets/images/icon/01.png" class="img-fluid" alt=""></a>
-                                                               <a class="me-2" href="#"  data-bs-toggle="tooltip" data-bs-placement="top" title="Love"><img src="../assets/images/icon/02.png" class="img-fluid" alt=""></a>
-                                                               <a class="me-2" href="#"  data-bs-toggle="tooltip" data-bs-placement="top" title="Happy"><img src="../assets/images/icon/03.png" class="img-fluid" alt=""></a>
-                                                               <a class="me-2" href="#"  data-bs-toggle="tooltip" data-bs-placement="top" title="HaHa"><img src="../assets/images/icon/04.png" class="img-fluid" alt=""></a>
-                                                               <a class="me-2" href="#"  data-bs-toggle="tooltip" data-bs-placement="top" title="Think"><img src="../assets/images/icon/05.png" class="img-fluid" alt=""></a>
-                                                               <a class="me-2" href="#"  data-bs-toggle="tooltip" data-bs-placement="top" title="Sade" ><img src="../assets/images/icon/06.png" class="img-fluid" alt=""></a>
-                                                               <a class="me-2" href="#"  data-bs-toggle="tooltip" data-bs-placement="top" title="Lovely"><img src="../assets/images/icon/07.png" class="img-fluid" alt=""></a>
-                                                            </div>
-                                                         </div>
-                                                      </div>
-                                                      <div class="total-like-block ms-2 me-3">
-                                                         <div class="dropdown">
-                                                            <span class="dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" role="button">
-                                                            140 Likes
-                                                            </span>
-                                                            <div class="dropdown-menu">
-                                                               <a class="dropdown-item" href="#">Max Emum</a>
-                                                               <a class="dropdown-item" href="#">Bill Yerds</a>
-                                                               <a class="dropdown-item" href="#">Hap E. Birthday</a>
-                                                               <a class="dropdown-item" href="#">Tara Misu</a>
-                                                               <a class="dropdown-item" href="#">Midge Itz</a>
-                                                               <a class="dropdown-item" href="#">Sal Vidge</a>
-                                                               <a class="dropdown-item" href="#">Other</a>
-                                                            </div>
-                                                         </div>
-                                                      </div>
-                                                   </div>
-                                                   <div class="total-comment-block">
-                                                      <div class="dropdown">
-                                                         <span class="dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" role="button">
-                                                         20 Comment
-                                                         </span>
-                                                         <div class="dropdown-menu">
-                                                            <a class="dropdown-item" href="#">Max Emum</a>
-                                                            <a class="dropdown-item" href="#">Bill Yerds</a>
-                                                            <a class="dropdown-item" href="#">Hap E. Birthday</a>
-                                                            <a class="dropdown-item" href="#">Tara Misu</a>
-                                                            <a class="dropdown-item" href="#">Midge Itz</a>
-                                                            <a class="dropdown-item" href="#">Sal Vidge</a>
-                                                            <a class="dropdown-item" href="#">Other</a>
-                                                         </div>
-                                                      </div>
-                                                   </div>
-                                                </div>
-                                                <div class="share-block d-flex align-items-center feather-icon mt-2 mt-md-0">
-                                                   <a href="#" data-bs-toggle="offcanvas" data-bs-target="#share-btn" aria-controls="share-btn"><i class="ri-share-line"></i>
-                                                   <span class="ms-1">99 Share</span></a>
-                                                </div>
-                                             </div>
-                                             <hr>
-                                             <ul class="post-comments p-0 m-0">
-                                                <li class="mb-2">
-                                                   <div class="d-flex flex-wrap">
-                                                      <div class="user-img">
-                                                         <img src="../assets/images/user/02.jpg" alt="userimg" class="avatar-35 rounded-circle img-fluid">
-                                                      </div>
-                                                      <div class="comment-data-block ms-3">
-                                                         <h6>Monty Carlo</h6>
-                                                         <p class="mb-0">Lorem ipsum dolor sit amet</p>
-                                                         <div class="d-flex flex-wrap align-items-center comment-activity">
-                                                            <a href="#">like</a>
-                                                            <a href="#">reply</a>
-                                                            <a href="#">translate</a>
-                                                            <span> 5 min </span>
-                                                         </div>
-                                                      </div>
-                                                   </div>
-                                                </li>
-                                                <li>
-                                                   <div class="d-flex flex-wrap">
-                                                      <div class="user-img">
-                                                         <img src="../assets/images/user/03.jpg" alt="userimg" class="avatar-35 rounded-circle img-fluid">
-                                                      </div>
-                                                      <div class="comment-data-block ms-3">
-                                                         <h6>Paul Molive</h6>
-                                                         <p class="mb-0">Lorem ipsum dolor sit amet</p>
-                                                         <div class="d-flex flex-wrap align-items-center comment-activity">
-                                                            <a href="#">like</a>
-                                                            <a href="#">reply</a>
-                                                            <a href="#">translate</a>
-                                                            <span> 5 min </span>
-                                                         </div>
-                                                      </div>
-                                                   </div>
-                                                </li>
-                                             </ul>
-                                             <form class="comment-text d-flex align-items-center mt-3" action="javascript:void(0);">
-                                                <input type="text" class="form-control rounded" placeholder="Enter Your Comment">
-                                                <div class="comment-attagement d-flex">
-                                                   <a href="#"><i class="ri-link me-3"></i></a>
-                                                   <a href="#"><i class="ri-user-smile-line me-3"></i></a>
-                                                   <a href="#"><i class="ri-camera-line me-3"></i></a>
-                                                </div>
-                                             </form>
-                                          </div>
-                                       </div>
-                                       <div class="post-item">
-                                          <div class="user-post-data py-3">
-                                             <div class="d-flex  justify-content-between">
-                                                <div class="me-3">
-                                                   <img class="rounded-circle  avatar-60" src="../assets/images/user/1.jpg" alt="">
-                                                </div>
-                                                <div class="w-100">
-                                                   <div class="d-flex justify-content-between">
-                                                      <div class="">
-                                                         <h5 class="mb-0 d-inline-block me-1"><a href="#" class="">Bni Cyst</a></h5>
-                                                         <p class="mb-0 d-inline-block">Share Anna Mull's Post</p>
-                                                         <p class="mb-0">5 hour ago</p>
-                                                      </div>
-                                                      <div class="card-post-toolbar">
-                                                         <div class="dropdown">
-                                                            <span class="dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" role="button">
-                                                            <i class="ri-more-fill"></i>
-                                                            </span>
-                                                            <div class="dropdown-menu m-0 p-0">
-                                                               <a class="dropdown-item p-3" href="#">
-                                                                  <div class="d-flex align-items-top">
-                                                                     <i class="ri-save-line h4"></i>
-                                                                     <div class="data ms-2">
-                                                                        <h6>Save Post</h6>
-                                                                        <p class="mb-0">Add this to your saved items</p>
-                                                                     </div>
-                                                                  </div>
-                                                               </a>
-                                                               <a class="dropdown-item p-3" href="#">
-                                                                  <div class="d-flex align-items-top">
-                                                                  <i class="ri-pencil-line h4"></i>
-                                                                     <div class="data ms-2">
-                                                                        <h6>Edit Post</h6>
-                                                                        <p class="mb-0">Update your post and saved items</p>
-                                                                     </div>
-                                                                  </div>
-                                                               </a>
-                                                               <a class="dropdown-item p-3" href="#">
-                                                                  <div class="d-flex align-items-top">
-                                                                  <i class="ri-close-circle-line h4"></i>
-                                                                     <div class="data ms-2">
-                                                                        <h6>Hide From Timeline</h6>
-                                                                        <p class="mb-0">See fewer posts like this.</p>
-                                                                     </div>
-                                                                  </div>
-                                                               </a>
-                                                               <a class="dropdown-item p-3" href="#">
-                                                                  <div class="d-flex align-items-top">
-                                                                  <i class="ri-delete-bin-7-line h4"></i>
-                                                                     <div class="data ms-2">
-                                                                        <h6>Delete</h6>
-                                                                        <p class="mb-0">Remove thids Post on Timeline</p>
-                                                                     </div>
-                                                                  </div>
-                                                               </a>
-                                                               <a class="dropdown-item p-3" href="#">
-                                                                  <div class="d-flex align-items-top">
-                                                                     <i class="ri-notification-line h4"></i>
-                                                                     <div class="data ms-2">
-                                                                        <h6>Notifications</h6>
-                                                                        <p class="mb-0">Turn on notifications for this post</p>
-                                                                     </div>
-                                                                  </div>
-                                                               </a>
-                                                            </div>
-                                                         </div>
-                                                      </div>
-                                                   </div>
-                                                </div>
-                                             </div>
-                                          </div>
-                                          <div class="user-post">
-                                             <a href="#"><img src="../assets/images/page-img/p3.jpg" alt="post-image" class="img-fluid w-100" /></a>
-                                          </div>
-                                          <div class="comment-area mt-3">
-                                             <div class="d-flex justify-content-between align-items-center flex-wrap">
-                                                <div class="like-block position-relative d-flex align-items-center">
-                                                   <div class="d-flex align-items-center">
-                                                      <div class="like-data">
-                                                         <div class="dropdown">
-                                                            <span class="dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" role="button">
-                                                            <img src="../assets/images/icon/01.png" class="img-fluid" alt="">
-                                                            </span>
-                                                            <div class="dropdown-menu py-2">
-                                                               <a class="ms-2 me-2" href="#" data-bs-toggle="tooltip" data-bs-placement="top" title="Like"><img src="../assets/images/icon/01.png" class="img-fluid" alt=""></a>
-                                                               <a class="me-2" href="#"  data-bs-toggle="tooltip" data-bs-placement="top" title="Love"><img src="../assets/images/icon/02.png" class="img-fluid" alt=""></a>
-                                                               <a class="me-2" href="#"  data-bs-toggle="tooltip" data-bs-placement="top" title="Happy"><img src="../assets/images/icon/03.png" class="img-fluid" alt=""></a>
-                                                               <a class="me-2" href="#"  data-bs-toggle="tooltip" data-bs-placement="top" title="HaHa"><img src="../assets/images/icon/04.png" class="img-fluid" alt=""></a>
-                                                               <a class="me-2" href="#"  data-bs-toggle="tooltip" data-bs-placement="top" title="Think"><img src="../assets/images/icon/05.png" class="img-fluid" alt=""></a>
-                                                               <a class="me-2" href="#"  data-bs-toggle="tooltip" data-bs-placement="top" title="Sade" ><img src="../assets/images/icon/06.png" class="img-fluid" alt=""></a>
-                                                               <a class="me-2" href="#"  data-bs-toggle="tooltip" data-bs-placement="top" title="Lovely"><img src="../assets/images/icon/07.png" class="img-fluid" alt=""></a>
-                                                            </div>
-                                                         </div>
-                                                      </div>
-                                                      <div class="total-like-block ms-2 me-3">
-                                                         <div class="dropdown">
-                                                            <span class="dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" role="button">
-                                                            140 Likes
-                                                            </span>
-                                                            <div class="dropdown-menu">
-                                                               <a class="dropdown-item" href="#">Max Emum</a>
-                                                               <a class="dropdown-item" href="#">Bill Yerds</a>
-                                                               <a class="dropdown-item" href="#">Hap E. Birthday</a>
-                                                               <a class="dropdown-item" href="#">Tara Misu</a>
-                                                               <a class="dropdown-item" href="#">Midge Itz</a>
-                                                               <a class="dropdown-item" href="#">Sal Vidge</a>
-                                                               <a class="dropdown-item" href="#">Other</a>
-                                                            </div>
-                                                         </div>
-                                                      </div>
-                                                   </div>
-                                                   <div class="total-comment-block">
-                                                      <div class="dropdown">
-                                                         <span class="dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" role="button">
-                                                         20 Comment
-                                                         </span>
-                                                         <div class="dropdown-menu">
-                                                            <a class="dropdown-item" href="#">Max Emum</a>
-                                                            <a class="dropdown-item" href="#">Bill Yerds</a>
-                                                            <a class="dropdown-item" href="#">Hap E. Birthday</a>
-                                                            <a class="dropdown-item" href="#">Tara Misu</a>
-                                                            <a class="dropdown-item" href="#">Midge Itz</a>
-                                                            <a class="dropdown-item" href="#">Sal Vidge</a>
-                                                            <a class="dropdown-item" href="#">Other</a>
-                                                         </div>
-                                                      </div>
-                                                   </div>
-                                                </div>
-                                                <div class="share-block d-flex align-items-center feather-icon mt-2 mt-md-0">
-                                                   <a href="#" data-bs-toggle="offcanvas" data-bs-target="#share-btn" aria-controls="share-btn"><i class="ri-share-line"></i>
-                                                   <span class="ms-1">99 Share</span></a>
-                                                </div>
-                                             </div>
-                                             <hr>
-                                             <ul class="post-comments p-0 m-0">
-                                                <li class="mb-2">
-                                                   <div class="d-flex flex-wrap">
-                                                      <div class="user-img">
-                                                         <img src="../assets/images/user/02.jpg" alt="userimg" class="avatar-35 rounded-circle img-fluid">
-                                                      </div>
-                                                      <div class="comment-data-block ms-3">
-                                                         <h6>Monty Carlo</h6>
-                                                         <p class="mb-0">Lorem ipsum dolor sit amet</p>
-                                                         <div class="d-flex flex-wrap align-items-center comment-activity">
-                                                            <a href="#">like</a>
-                                                            <a href="#">reply</a>
-                                                            <a href="#">translate</a>
-                                                            <span> 5 min </span>
-                                                         </div>
-                                                      </div>
-                                                   </div>
-                                                </li>
-                                                <li>
-                                                   <div class="d-flex flex-wrap">
-                                                      <div class="user-img">
-                                                         <img src="../assets/images/user/03.jpg" alt="userimg" class="avatar-35 rounded-circle img-fluid">
-                                                      </div>
-                                                      <div class="comment-data-block ms-3">
-                                                         <h6>Paul Molive</h6>
-                                                         <p class="mb-0">Lorem ipsum dolor sit amet</p>
-                                                         <div class="d-flex flex-wrap align-items-center comment-activity">
-                                                            <a href="#">like</a>
-                                                            <a href="#">reply</a>
-                                                            <a href="#">translate</a>
-                                                            <span> 5 min </span>
-                                                         </div>
-                                                      </div>
-                                                   </div>
-                                                </li>
-                                             </ul>
-                                             <form class="comment-text d-flex align-items-center mt-3" action="javascript:void(0);">
-                                                <input type="text" class="form-control rounded" placeholder="Enter Your Comment">
-                                                <div class="comment-attagement d-flex">
-                                                   <a href="#"><i class="ri-link me-3"></i></a>
-                                                   <a href="#"><i class="ri-user-smile-line me-3"></i></a>
-                                                   <a href="#"><i class="ri-camera-line me-3"></i></a>
-                                                </div>
-                                             </form>
-                                          </div>
-                                       </div>
-                                       <div class="post-item">
-                                          <div class="user-post-data py-3">
-                                             <div class="d-flex justify-content-between">
-                                                <div class="me-3">
-                                                   <img class="rounded-circle avatar-60" src="../assets/images/user/1.jpg" alt="">
-                                                </div>
-                                                <div class="w-100">
-                                                   <div class="d-flex justify-content-between">
-                                                      <div class="">
-                                                         <h5 class="mb-0 d-inline-block"><a href="#" class="">Bni Cyst</a></h5>
-                                                         <p class="ms-1 mb-0 d-inline-block">Update his Status</p>
-                                                         <p class="mb-0">7 hour ago</p>
-                                                      </div>
-                                                      <div class="card-post-toolbar">
-                                                         <div class="dropdown">
-                                                            <span class="dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" role="button">
-                                                            <i class="ri-more-fill"></i>
-                                                            </span>
-                                                            <div class="dropdown-menu m-0 p-0">
-                                                               <a class="dropdown-item p-3" href="#">
-                                                                  <div class="d-flex align-items-top">
-                                                                  <i class="ri-save-line h4"></i>
-                                                                     <div class="data ms-2">
-                                                                        <h6>Save Post</h6>
-                                                                        <p class="mb-0">Add this to your saved items</p>
-                                                                     </div>
-                                                                  </div>
-                                                               </a>
-                                                               <a class="dropdown-item p-3" href="#">
-                                                                  <div class="d-flex align-items-top">
-                                                                     <i class="ri-pencil-line h4"></i>
-                                                                     <div class="data ms-2">
-                                                                        <h6>Edit Post</h6>
-                                                                        <p class="mb-0">Update your post and saved items</p>
-                                                                     </div>
-                                                                  </div>
-                                                               </a>
-                                                               <a class="dropdown-item p-3" href="#">
-                                                                  <div class="d-flex align-items-top">
-                                                                  <i class="ri-close-circle-line h4"></i>
-                                                                     <div class="data ms-2">
-                                                                        <h6>Hide From Timeline</h6>
-                                                                        <p class="mb-0">See fewer posts like this.</p>
-                                                                     </div>
-                                                                  </div>
-                                                               </a>
-                                                               <a class="dropdown-item p-3" href="#">
-                                                                  <div class="d-flex align-items-top">
-                                                                     <i class="ri-delete-bin-7-line h4"></i>
-                                                                     <div class="data ms-2">
-                                                                        <h6>Delete</h6>
-                                                                        <p class="mb-0">Remove thids Post on Timeline</p>
-                                                                     </div>
-                                                                  </div>
-                                                               </a>
-                                                               <a class="dropdown-item p-3" href="#">
-                                                                  <div class="d-flex align-items-top">
-                                                                     <i class="ri-notification-line h4"></i>
-                                                                     <div class="data ms-2">
-                                                                        <h6>Notifications</h6>
-                                                                        <p class="mb-0">Turn on notifications for this post</p>
-                                                                     </div>
-                                                                  </div>
-                                                               </a>
-                                                            </div>
-                                                         </div>
-                                                      </div>
-                                                   </div>
-                                                </div>
-                                             </div>
-                                          </div>
-                                          <div class="user-post">
-                                             <p>Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries,</p>
-                                          </div>
-                                          <div class="comment-area mt-3">
-                                             <div class="d-flex justify-content-between align-items-center flex-wrap">
-                                                <div class="like-block position-relative d-flex align-items-center">
-                                                   <div class="d-flex align-items-center">
-                                                      <div class="like-data">
-                                                         <div class="dropdown">
-                                                            <span class="dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" role="button">
-                                                            <img src="../assets/images/icon/01.png" class="img-fluid" alt="">
-                                                            </span>
-                                                            <div class="dropdown-menu py-2">
-                                                               <a class="ms-2 me-2" href="#" data-bs-toggle="tooltip" data-bs-placement="top" title="Like"><img src="../assets/images/icon/01.png" class="img-fluid" alt=""></a>
-                                                               <a class="me-2" href="#"  data-bs-toggle="tooltip" data-bs-placement="top" title="Love"><img src="../assets/images/icon/02.png" class="img-fluid" alt=""></a>
-                                                               <a class="me-2" href="#"  data-bs-toggle="tooltip" data-bs-placement="top" title="Happy"><img src="../assets/images/icon/03.png" class="img-fluid" alt=""></a>
-                                                               <a class="me-2" href="#"  data-bs-toggle="tooltip" data-bs-placement="top" title="HaHa"><img src="../assets/images/icon/04.png" class="img-fluid" alt=""></a>
-                                                               <a class="me-2" href="#"  data-bs-toggle="tooltip" data-bs-placement="top" title="Think"><img src="../assets/images/icon/05.png" class="img-fluid" alt=""></a>
-                                                               <a class="me-2" href="#"  data-bs-toggle="tooltip" data-bs-placement="top" title="Sade" ><img src="../assets/images/icon/06.png" class="img-fluid" alt=""></a>
-                                                               <a class="me-2" href="#"  data-bs-toggle="tooltip" data-bs-placement="top" title="Lovely"><img src="../assets/images/icon/07.png" class="img-fluid" alt=""></a>
-                                                            </div>
-                                                         </div>
-                                                      </div>
-                                                      <div class="total-like-block ms-2 me-3">
-                                                         <div class="dropdown">
-                                                            <span class="dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" role="button">
-                                                            140 Likes
-                                                            </span>
-                                                            <div class="dropdown-menu">
-                                                               <a class="dropdown-item" href="#">Max Emum</a>
-                                                               <a class="dropdown-item" href="#">Bill Yerds</a>
-                                                               <a class="dropdown-item" href="#">Hap E. Birthday</a>
-                                                               <a class="dropdown-item" href="#">Tara Misu</a>
-                                                               <a class="dropdown-item" href="#">Midge Itz</a>
-                                                               <a class="dropdown-item" href="#">Sal Vidge</a>
-                                                               <a class="dropdown-item" href="#">Other</a>
-                                                            </div>
-                                                         </div>
-                                                      </div>
-                                                   </div>
-                                                   <div class="total-comment-block">
-                                                      <div class="dropdown">
-                                                         <span class="dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" role="button">
-                                                         20 Comment
-                                                         </span>
-                                                         <div class="dropdown-menu">
-                                                            <a class="dropdown-item" href="#">Max Emum</a>
-                                                            <a class="dropdown-item" href="#">Bill Yerds</a>
-                                                            <a class="dropdown-item" href="#">Hap E. Birthday</a>
-                                                            <a class="dropdown-item" href="#">Tara Misu</a>
-                                                            <a class="dropdown-item" href="#">Midge Itz</a>
-                                                            <a class="dropdown-item" href="#">Sal Vidge</a>
-                                                            <a class="dropdown-item" href="#">Other</a>
-                                                         </div>
-                                                      </div>
-                                                   </div>
-                                                </div>
-                                                <div class="share-block d-flex align-items-center feather-icon mt-2 mt-md-0">
-                                                   <a href="#" data-bs-toggle="offcanvas" data-bs-target="#share-btn" aria-controls="share-btn"><i class="ri-share-line"></i>
-                                                   <span class="ms-1">99 Share</span></a>
-                                                </div>
-                                             </div>
-                                             <hr>
-                                             <ul class="post-comments p-0 m-0">
-                                                <li class="mb-2">
-                                                   <div class="d-flex flex-wrap">
-                                                      <div class="user-img">
-                                                         <img src="../assets/images/user/02.jpg" alt="userimg" class="avatar-35 rounded-circle img-fluid">
-                                                      </div>
-                                                      <div class="comment-data-block ms-3">
-                                                         <h6>Monty Carlo</h6>
-                                                         <p class="mb-0">Lorem ipsum dolor sit amet</p>
-                                                         <div class="d-flex flex-wrap align-items-center comment-activity">
-                                                            <a href="#">like</a>
-                                                            <a href="#">reply</a>
-                                                            <a href="#">translate</a>
-                                                            <span> 5 min </span>
-                                                         </div>
-                                                      </div>
-                                                   </div>
-                                                </li>
-                                                <li>
-                                                   <div class="d-flex flex-wrap">
-                                                      <div class="user-img">
-                                                         <img src="../assets/images/user/03.jpg" alt="userimg" class="avatar-35 rounded-circle img-fluid">
-                                                      </div>
-                                                      <div class="comment-data-block ms-3">
-                                                         <h6>Paul Molive</h6>
-                                                         <p class="mb-0">Lorem ipsum dolor sit amet</p>
-                                                         <div class="d-flex flex-wrap align-items-center comment-activity">
-                                                            <a href="#">like</a>
-                                                            <a href="#">reply</a>
-                                                            <a href="#">translate</a>
-                                                            <span> 5 min </span>
-                                                         </div>
-                                                      </div>
-                                                   </div>
-                                                </li>
-                                             </ul>
-                                             <form class="comment-text d-flex align-items-center mt-3" action="javascript:void(0);">
-                                                <input type="text" class="form-control rounded" placeholder="Enter Your Comment">
-                                                <div class="comment-attagement d-flex">
-                                                   <a href="#"><i class="ri-link me-3"></i></a>
-                                                   <a href="#"><i class="ri-user-smile-line me-3"></i></a>
-                                                   <a href="#"><i class="ri-camera-line me-3"></i></a>
-                                                </div>
-                                             </form>
-                                          </div>
-                                       </div>
-                                       <div class="post-item">
-                                          <div class="user-post-data py-3">
-                                             <div class="d-flex justify-content-between">
-                                                <div class=" me-3">
-                                                   <img class="rounded-circle avatar-60" src="../assets/images/user/1.jpg" alt="">
-                                                </div>
-                                                <div class="w-100">
-                                                   <div class="d-flex justify-content-between">
-                                                      <div class="">
-                                                         <h5 class="mb-0 d-inline-block me-1"><a href="#" class="">Bni Cyst</a></h5>
-                                                         <p class=" mb-0 d-inline-block">Change Profile Picture</p>
-                                                         <p class="mb-0">3 day ago</p>
-                                                      </div>
-                                                      <div class="card-post-toolbar">
-                                                         <div class="dropdown">
-                                                            <span class="dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" role="button">
-                                                            <i class="ri-more-fill"></i>
-                                                            </span>
-                                                         <div class="dropdown-menu m-0 p-0">
-                                                               <a class="dropdown-item p-3" href="#">
-                                                                  <div class="d-flex align-items-top">
-                                                                  <i class="ri-save-line h4"></i>
-                                                                     <div class="data ms-2">
-                                                                        <h6>Save Post</h6>
-                                                                        <p class="mb-0">Add this to your saved items</p>
-                                                                     </div>
-                                                                  </div>
-                                                               </a>
-                                                               <a class="dropdown-item p-3" href="#">
-                                                                  <div class="d-flex align-items-top">
-                                                                  <i class="ri-pencil-line h4"></i>
-                                                                     <div class="data ms-2">
-                                                                        <h6>Edit Post</h6>
-                                                                        <p class="mb-0">Update your post and saved items</p>
-                                                                     </div>
-                                                                  </div>
-                                                               </a>
-                                                               <a class="dropdown-item p-3" href="#">
-                                                                  <div class="d-flex align-items-top">
-                                                                     <i class="ri-close-circle-line h4"></i>
-                                                                     <div class="data ms-2">
-                                                                        <h6>Hide From Timeline</h6>
-                                                                        <p class="mb-0">See fewer posts like this.</p>
-                                                                     </div>
-                                                                  </div>
-                                                               </a>
-                                                               <a class="dropdown-item p-3" href="#">
-                                                                  <div class="d-flex align-items-top">
-                                                                  <i class="ri-delete-bin-7-line h4"></i>
-                                                                     <div class="data ms-2">
-                                                                        <h6>Delete</h6>
-                                                                        <p class="mb-0">Remove thids Post on Timeline</p>
-                                                                     </div>
-                                                                  </div>
-                                                               </a>
-                                                               <a class="dropdown-item p-3" href="#">
-                                                                  <div class="d-flex align-items-top">
-                                                                  <i class="ri-notification-line h4"></i>
-                                                                     <div class="data ms-2">
-                                                                        <h6>Notifications</h6>
-                                                                        <p class="mb-0">Turn on notifications for this post</p>
-                                                                     </div>
-                                                                  </div>
-                                                               </a>
-                                                            </div>
-                                                         </div>
-                                                      </div>
-                                                   </div>
-                                                </div>
-                                             </div>
-                                          </div>
-                                          <div class="user-post text-center">
-                                             <a href="#"><img src="../assets/images/page-img/p1.jpg" alt="post-image" class="img-fluid profile-img" /></a>
-                                          </div>
-                                          <div class="comment-area mt-3">
-                                             <div class="d-flex justify-content-between align-items-center flex-wrap">
-                                                <div class="like-block position-relative d-flex align-items-center">
-                                                   <div class="d-flex align-items-center">
-                                                      <div class="like-data">
-                                                         <div class="dropdown">
-                                                            <span class="dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" role="button">
-                                                            <img src="../assets/images/icon/01.png" class="img-fluid" alt="">
-                                                            </span>
-                                                            <div class="dropdown-menu py-2">
-                                                               <a class="ms-2 me-2" href="#" data-bs-toggle="tooltip" data-bs-placement="top" title="Like"><img src="../assets/images/icon/01.png" class="img-fluid" alt=""></a>
-                                                               <a class="me-2" href="#"  data-bs-toggle="tooltip" data-bs-placement="top" title="Love"><img src="../assets/images/icon/02.png" class="img-fluid" alt=""></a>
-                                                               <a class="me-2" href="#"  data-bs-toggle="tooltip" data-bs-placement="top" title="Happy"><img src="../assets/images/icon/03.png" class="img-fluid" alt=""></a>
-                                                               <a class="me-2" href="#"  data-bs-toggle="tooltip" data-bs-placement="top" title="HaHa"><img src="../assets/images/icon/04.png" class="img-fluid" alt=""></a>
-                                                               <a class="me-2" href="#"  data-bs-toggle="tooltip" data-bs-placement="top" title="Think"><img src="../assets/images/icon/05.png" class="img-fluid" alt=""></a>
-                                                               <a class="me-2" href="#"  data-bs-toggle="tooltip" data-bs-placement="top" title="Sade" ><img src="../assets/images/icon/06.png" class="img-fluid" alt=""></a>
-                                                               <a class="me-2" href="#"  data-bs-toggle="tooltip" data-bs-placement="top" title="Lovely"><img src="../assets/images/icon/07.png" class="img-fluid" alt=""></a>
-                                                            </div>
-                                                         </div>
-                                                      </div>
-                                                      <div class="total-like-block ms-2 me-3">
-                                                         <div class="dropdown">
-                                                            <span class="dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" role="button">
-                                                            140 Likes
-                                                            </span>
-                                                            <div class="dropdown-menu">
-                                                               <a class="dropdown-item" href="#">Max Emum</a>
-                                                               <a class="dropdown-item" href="#">Bill Yerds</a>
-                                                               <a class="dropdown-item" href="#">Hap E. Birthday</a>
-                                                               <a class="dropdown-item" href="#">Tara Misu</a>
-                                                               <a class="dropdown-item" href="#">Midge Itz</a>
-                                                               <a class="dropdown-item" href="#">Sal Vidge</a>
-                                                               <a class="dropdown-item" href="#">Other</a>
-                                                            </div>
-                                                         </div>
-                                                      </div>
-                                                   </div>
-                                                   <div class="total-comment-block">
-                                                      <div class="dropdown">
-                                                         <span class="dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" role="button">
-                                                         20 Comment
-                                                         </span>
-                                                         <div class="dropdown-menu">
-                                                            <a class="dropdown-item" href="#">Max Emum</a>
-                                                            <a class="dropdown-item" href="#">Bill Yerds</a>
-                                                            <a class="dropdown-item" href="#">Hap E. Birthday</a>
-                                                            <a class="dropdown-item" href="#">Tara Misu</a>
-                                                            <a class="dropdown-item" href="#">Midge Itz</a>
-                                                            <a class="dropdown-item" href="#">Sal Vidge</a>
-                                                            <a class="dropdown-item" href="#">Other</a>
-                                                         </div>
-                                                      </div>
-                                                   </div>
-                                                </div>
-                                                <div class="share-block d-flex align-items-center feather-icon mt-2 mt-md-0">
-                                                   <a href="#" data-bs-toggle="offcanvas" data-bs-target="#share-btn" aria-controls="share-btn"><i class="ri-share-line"></i>
-                                                   <span class="ms-1">99 Share</span></a>
-                                                </div>
-                                             </div>
-                                             <hr>
-                                             <ul class="post-comments p-0 m-0">
-                                                <li class="mb-2">
-                                                   <div class="d-flex flex-wrap">
-                                                      <div class="user-img">
-                                                         <img src="../assets/images/user/02.jpg" alt="userimg" class="avatar-35 rounded-circle img-fluid">
-                                                      </div>
-                                                      <div class="comment-data-block ms-3">
-                                                         <h6>Monty Carlo</h6>
-                                                         <p class="mb-0">Lorem ipsum dolor sit amet</p>
-                                                         <div class="d-flex flex-wrap align-items-center comment-activity">
-                                                            <a href="#">like</a>
-                                                            <a href="#">reply</a>
-                                                            <a href="#">translate</a>
-                                                            <span> 5 min </span>
-                                                         </div>
-                                                      </div>
-                                                   </div>
-                                                </li>
-                                                <li>
-                                                   <div class="d-flex flex-wrap">
-                                                      <div class="user-img">
-                                                         <img src="../assets/images/user/03.jpg" alt="userimg" class="avatar-35 rounded-circle img-fluid">
-                                                      </div>
-                                                      <div class="comment-data-block ms-3">
-                                                         <h6>Paul Molive</h6>
-                                                         <p class="mb-0">Lorem ipsum dolor sit amet</p>
-                                                         <div class="d-flex flex-wrap align-items-center comment-activity">
-                                                            <a href="#">like</a>
-                                                            <a href="#">reply</a>
-                                                            <a href="#">translate</a>
-                                                            <span> 5 min </span>
-                                                         </div>
-                                                      </div>
-                                                   </div>
-                                                </li>
-                                             </ul>
-                                             <form class="comment-text d-flex align-items-center mt-3" action="javascript:void(0);">
-                                                <input type="text" class="form-control rounded" placeholder="Enter Your Comment">
-                                                <div class="comment-attagement d-flex">
-                                                   <a href="#"><i class="ri-link me-3"></i></a>
-                                                   <a href="#"><i class="ri-user-smile-line me-3"></i></a>
-                                                   <a href="#"><i class="ri-camera-line me-3"></i></a>
-                                                </div>
-                                             </form>
-                                          </div>
-                                       </div>
-                                    </div>
-                                 </div>
+                                                      ';
+                                                      
+                                                   } 
+
+                                             ?>
+                                   
                               </div>
                            </div>
                         </div>
@@ -1159,26 +595,142 @@
                                  <div class="col-md-9 ps-4">
                                     <div class="tab-content" >
                                        <div class="tab-pane fade active show" id="v-pills-basicinfo-tab" role="tabpanel"  aria-labelledby="v-pills-basicinfo-tab">
-                                          <h4>Contact Information</h4>
+                                          <h4>
+                                             Contact Information
+                                             <button class="btn btn-primary float-end" data-bs-toggle="modal" data-bs-target="#post-modal">Update Profile</button>
+                                          </h4>
+
+                                          <div class="modal fade" id="post-modal" tabindex="-1"  aria-labelledby="post-modalLabel" aria-hidden="true" >
+                                             <div class="modal-dialog  modal-lg modal-fullscreen-sm-down">
+                                                <div class="modal-content">
+                                                   <div class="modal-header">
+                                                      <h5 class="modal-title" id="post-modalLabel">Update Profile</h5>
+                                                      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class="ri-close-fill"></i></button>
+                                                   </div>
+                                                   <div class="modal-body">
+                                                        <form action="" method="post">
+                                                            <div class="row">
+                                                               <div class="col-3">
+                                                                  <h6>Firstname</h6>
+                                                               </div>
+                                                               <div class="col-9">
+                                                                  <input type="text" name="first_name" required value="<?=$user_first_name?>" class="form-control form-control-sm mb-1" />
+                                                               </div>
+                                                               <div class="col-3">
+                                                                  <h6>Lastname</h6>
+                                                               </div>
+                                                               <div class="col-9">
+                                                                  <input type="text" name="last_name" required value="<?=$user_last_name?>" class="form-control form-control-sm mb-1"/>
+                                                               </div>
+                                                               <div class="col-3">
+                                                                  <h6>Email</h6>
+                                                               </div>
+                                                               <div class="col-9">
+                                                                  <input type="email" name="email" required value="<?=$user_email?>" class="form-control form-control-sm mb-1">
+                                                               </div>
+                                                               <div class="col-3">
+                                                                  <h6>Mobile</h6>
+                                                               </div>
+                                                               <div class="col-9">
+                                                                  <input type="text" name="phone" required value="<?=$user_phone?>" class="form-control form-control-sm mb-1">
+                                                               </div>
+                                                               <div class="col-3">
+                                                                  <h6>Address</h6>
+                                                               </div>
+                                                               <div class="col-9">    
+                                                                  <input type="text" name="address" required value="<?=$user_address?>" class="form-control form-control-sm mb-1">
+                                                               </div>
+                                                            </div>
+                                                            <h4 class="mt-3">Websites and Social Links</h4>
+                                                            <hr>
+                                                            <div class="row">
+                                                               <div class="col-3">
+                                                                  <h6>Website</h6>
+                                                               </div>
+                                                               <div class="col-9">
+                                                                  <input type="text" name="website" value="<?=$user_website?>" class="form-control form-control-sm mb-1">
+                                                               </div>
+                                                               <div class="col-3">
+                                                                  <h6>Social Link</h6>
+                                                               </div>
+                                                               <div class="col-9">
+                                                                  <input type="text" name="social_link" value="<?=$user_social_link?>" class="form-control form-control-sm mb-1">
+                                                               </div>
+                                                            </div>
+                                                            <h4 class="mt-3">Basic Information</h4>
+                                                            <hr>
+                                                            <div class="row">
+                                                               <div class="col-3">
+                                                                  <h6>Birth Date</h6>
+                                                               </div>
+                                                               <div class="col-9">
+                                                                  <input type="text" name="birth_date" value="<?=$user_birth_date?>" class="form-control form-control-sm mb-1">
+                                                               </div>
+                                                               <div class="col-3">
+                                                                  <h6>Birth Year</h6>
+                                                               </div>
+                                                               <div class="col-9">
+                                                                  <input type="text" name="birth_year" value="<?=$user_birth_year?>" class="form-control form-control-sm mb-1">
+                                                               </div>
+                                                               <div class="col-3">
+                                                                  <h6>Gender</h6>
+                                                               </div>
+                                                               <div class="col-9">
+                                                                     <input type="text" name="gender" value="<?=$user_gender?>" class="form-control form-control-sm mb-1">
+                                                               </div>
+                                                               <div class="col-3">
+                                                                  <h6>interested in</h6>
+                                                               </div>
+                                                               <div class="col-9">
+                                                                  <input type="text" name="interest" value="<?=$user_interest?>" class="form-control form-control-sm mb-1">
+                                                               </div>
+                                                               <div class="col-3">
+                                                                  <h6>language</h6>
+                                                               </div>
+                                                               <div class="col-9">
+                                                                     <input type="text" name="language" value="<?=$user_language?>" class="form-control form-control-sm mb-1">
+                                                               </div>
+                                                            </div>
+                                                            
+                                                               <button type="submit" name="btn_update_profile" class="btn btn-primary d-block w-100 mt-3">Update Profile</button>
+                                                        </form>
+                                                   </div>
+                                                </div>
+                                             </div>
+                                          </div>
+                                          
+                                          
                                           <hr>
                                           <div class="row">
+                                             <div class="col-3">
+                                                <h6>Firstname</h6>
+                                             </div>
+                                             <div class="col-9">
+                                                <p class="mb-0"><?=$user_first_name?></p>
+                                             </div>
+                                             <div class="col-3">
+                                                <h6>Lastname</h6>
+                                             </div>
+                                             <div class="col-9">
+                                                <p class="mb-0"><?=$user_last_name?></p>
+                                             </div>
                                              <div class="col-3">
                                                 <h6>Email</h6>
                                              </div>
                                              <div class="col-9">
-                                                <p class="mb-0">Bnijohn@gmail.com</p>
+                                                <p class="mb-0"><?=$user_email?></p>
                                              </div>
                                              <div class="col-3">
                                                 <h6>Mobile</h6>
                                              </div>
                                              <div class="col-9">
-                                                <p class="mb-0">(001) 4544 565 456</p>
+                                                <p class="mb-0"><?=$user_phone?></p>
                                              </div>
                                              <div class="col-3">
                                                 <h6>Address</h6>
                                              </div>
                                              <div class="col-9">
-                                                <p class="mb-0">United States of America</p>
+                                                <p class="mb-0"><?=$user_address?></p>
                                              </div>
                                           </div>
                                           <h4 class="mt-3">Websites and Social Links</h4>
@@ -1188,13 +740,13 @@
                                                 <h6>Website</h6>
                                              </div>
                                              <div class="col-9">
-                                                <p class="mb-0">www.bootstrap.com</p>
+                                                <p class="mb-0"><?=$user_website?></p>
                                              </div>
                                              <div class="col-3">
                                                 <h6>Social Link</h6>
                                              </div>
                                              <div class="col-9">
-                                                <p class="mb-0">www.bootstrap.com</p>
+                                                <p class="mb-0"><?=$user_social_link?></p>
                                              </div>
                                           </div>
                                           <h4 class="mt-3">Basic Information</h4>
@@ -1204,31 +756,31 @@
                                                 <h6>Birth Date</h6>
                                              </div>
                                              <div class="col-9">
-                                                <p class="mb-0">24 January</p>
+                                                <p class="mb-0"><?=$user_birth_date?></p>
                                              </div>
                                              <div class="col-3">
                                                 <h6>Birth Year</h6>
                                              </div>
                                              <div class="col-9">
-                                                <p class="mb-0">1994</p>
+                                                <p class="mb-0"><?=$user_birth_year?></p>
                                              </div>
                                              <div class="col-3">
                                                 <h6>Gender</h6>
                                              </div>
                                              <div class="col-9">
-                                                <p class="mb-0">Female</p>
+                                                <p class="mb-0"><?=$user_gender?></p>
                                              </div>
                                              <div class="col-3">
                                                 <h6>interested in</h6>
                                              </div>
                                              <div class="col-9">
-                                                <p class="mb-0">Designing</p>
+                                                <p class="mb-0"><?=$user_interest?></p>
                                              </div>
                                              <div class="col-3">
                                                 <h6>language</h6>
                                              </div>
                                              <div class="col-9">
-                                                <p class="mb-0">English, French</p>
+                                                <p class="mb-0"><?=$user_language?></p>
                                              </div>
                                           </div>
                                        </div>
@@ -4075,5 +3627,3 @@
     <!-- the page footer -->
     <?php require 'partials/footer.php'; ?>
 
-  </body>
-</html>
